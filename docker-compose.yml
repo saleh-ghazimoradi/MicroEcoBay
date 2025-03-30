@@ -1,0 +1,40 @@
+services:
+  user_db_server:
+    image: postgres:latest
+    ports:
+      - "5454:5432"
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      POSTGRES_DB: ${DB_UMS}
+      POSTGRES_USER: ${USER_UMS}
+      POSTGRES_PASSWORD: ${USER_UMS_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  Kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_NODE_ID: ${KAFKA_NODE_ID}
+      KAFKA_PROCESS_ROLES: ${KAFKA_PROCESS_ROLES}
+      KAFKA_LISTENERS: ${KAFKA_LISTENERS}
+      KAFKA_ADVERTISED_LISTENERS: ${KAFKA_ADVERTISED_LISTENERS}
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: ${KAFKA_LISTENER_SECURITY_PROTOCOL_MAP}
+      KAFKA_CONTROLLER_QUORUM_VOTERS: ${KAFKA_CONTROLLER_QUORUM_VOTERS}
+      KAFKA_CONTROLLER_LISTENER_NAMES: ${KAFKA_CONTROLLER_LISTENER_NAMES}
+      KAFKA_LOG_DIRS: ${KAFKA_LOG_DIRS}
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: ${KAFKA_AUTO_CREATE_TOPICS_ENABLE}
+      KAFKA_DELETE_TOPIC_ENABLE: ${KAFKA_DELETE_TOPIC_ENABLE}
+      CLUSTER_ID: ${CLUSTER_ID}
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+
+
+volumes:
+  db-data:
+  kafka-data:
