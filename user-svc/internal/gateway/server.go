@@ -20,6 +20,9 @@ func Server() error {
 		})
 	})
 
+	//kafkaProducer := queue.NewProducer(config.AppConfig.KafkaConfig.Broker, config.AppConfig.KafkaConfig.Topic)
+	//slg.Logger.Info("Kafka producer created", "kafka", kafkaProducer)
+
 	if err := app.Listen(config.AppConfig.ServerConfig.Port); err != nil {
 		return err
 	}
