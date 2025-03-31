@@ -19,6 +19,10 @@ type consumer struct {
 	ServiceName string
 }
 
+func (c *consumer) Close() error {
+	return c.Reader.Close()
+}
+
 func (c *consumer) HandleMessage(message string) error {
 	return c.Handler.HandleMessage(message)
 }
@@ -48,10 +52,6 @@ func (c *consumer) Listen(ctx context.Context) {
 			}
 		}
 	}
-}
-
-func (c *consumer) Close() error {
-	return c.Reader.Close()
 }
 
 func NewConsumer(broker, topic, groupId string, handler Consumer) Consumer {
