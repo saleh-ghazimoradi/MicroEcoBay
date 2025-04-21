@@ -8,7 +8,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/config"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/infra/queue"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/gateway/grpc/order"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/gateway/rest/routes"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/slg"
@@ -50,9 +49,6 @@ func Server() error {
 	app.Use(logger.New())
 
 	routes.RegisterRoutes(app, nil)
-
-	kafkaProducer := queue.NewProducer(config.AppConfig.KafkaConfig.Broker, config.AppConfig.KafkaConfig.Topic)
-	slg.Logger.Info("Kafka producer created", "kafka", kafkaProducer)
 
 	orderServiceClient, err := order.NewGrpcOrderServiceClient("localhost:50051")
 	if err != nil {
