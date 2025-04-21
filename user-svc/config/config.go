@@ -3,18 +3,26 @@ package config
 import (
 	"github.com/caarlos0/env/v11"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/slg"
+	"time"
 )
 
 var AppConfig *Config
 
 type Config struct {
-	ServerConfig   ServerConfig
-	KafkaConfig    KafkaConfig
-	DatabaseConfig DatabaseConfig
+	Server      Server
+	KafkaConfig KafkaConfig
+	Database    Database
 }
 
-type ServerConfig struct {
-	Port string `env:"SERVER_PORT"`
+type Server struct {
+	BodyLimit    int           `env:"BODY_LIMIT"`    // 1024 * 1024
+	WriteTimeout time.Duration `env:"WRITE_TIMEOUT"` // 10s
+	ReadTimeout  time.Duration `env:"READ_TIMEOUT"`  // 5s
+	IdleTimeout  time.Duration `env:"IDLE_TIMEOUT"`  // 30s
+	RateLimit    int           `env:"RATE_LIMIT"`    // 100
+	RateLimitExp time.Duration `env:"RATE_EXP"`      // 60s
+	Port         string        `env:"PORT"`          // 3000
+	Timeout      time.Duration `env:"TIMEOUT"`       // 30s
 }
 
 type KafkaConfig struct {
@@ -22,7 +30,7 @@ type KafkaConfig struct {
 	Topic  string `env:"KAFKA_TOPIC"`
 }
 
-type DatabaseConfig struct {
+type Database struct {
 }
 
 func LoadConfig() error {
