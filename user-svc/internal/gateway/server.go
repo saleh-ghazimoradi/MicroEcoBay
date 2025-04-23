@@ -19,13 +19,13 @@ import (
 )
 
 func Server() error {
-	db, err := db.DBConnection(db.DBMigrator)
+	d, err := db.DBConnection(db.DBMigrator)
 	if err != nil {
 		slg.Logger.Error(err.Error())
 		return err
 	}
 
-	postDB, err := db.DB()
+	postDB, err := d.DB()
 	if err != nil {
 		slg.Logger.Error("Unable to connect to database", "error", err.Error())
 		return err
