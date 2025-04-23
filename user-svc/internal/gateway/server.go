@@ -8,6 +8,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/config"
+	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/infra/db"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/gateway/grpc/order"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/gateway/rest/routes"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/slg"
@@ -18,6 +19,23 @@ import (
 )
 
 func Server() error {
+	db, err := db.DBConnection(db.DBMigrator)
+	if err != nil {
+		slg.Logger.Error(err.Error())
+		return err
+	}
+
+	postDB, err := db.DB()
+	if err != nil {
+		slg.Logger.Error("Unable to connect to database", "error", err.Error())
+		return err
+	}
+
+	defer func() {
+		if err = postDB.Close(); err != nil {
+			slg.Logger.Error("Error closing database connection", "error", err.Error())
+		}
+	}()
 
 	app := fiber.New(fiber.Config{
 		BodyLimit:    config.AppConfig.Server.BodyLimit,
