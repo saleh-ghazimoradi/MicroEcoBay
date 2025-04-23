@@ -5,7 +5,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func DBMigrateDrop(db *gorm.DB) error {
+func PostDBMigrateDrop(db *gorm.DB) error {
 	err := db.Migrator().DropTable(
 		&domain.User{},
 		&domain.Address{},

@@ -19,7 +19,7 @@ import (
 )
 
 func Server() error {
-	d, err := db.DBConnection(db.DBMigrator)
+	d, err := db.PostDBConnection(db.PostDBMigrator)
 	if err != nil {
 		slg.Logger.Error(err.Error())
 		return err

@@ -5,7 +5,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func DBMigrator(db *gorm.DB) error {
+func PostDBMigrator(db *gorm.DB) error {
 	return db.AutoMigrate(
 		&domain.User{},
 		&domain.Address{},

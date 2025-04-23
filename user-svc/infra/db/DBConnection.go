@@ -19,7 +19,7 @@ func postURI() string {
 		config.AppConfig.Database.DatabaseSSLMode)
 }
 
-func DBConnection(DBMigrator func(db *gorm.DB) error) (*gorm.DB, error) {
+func PostDBConnection(DBMigrator func(db *gorm.DB) error) (*gorm.DB, error) {
 	uri := postURI()
 	db, err := gorm.Open(postgres.Open(uri), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
