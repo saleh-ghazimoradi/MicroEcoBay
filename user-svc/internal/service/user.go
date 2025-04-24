@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/gofiber/fiber/v2"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/infra/queue"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/customErr"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/domain"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/dto"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/repository"
@@ -55,7 +54,7 @@ func (u *userService) Register(ctx context.Context, input *dto.UserSignup) error
 func (u *userService) Login(ctx context.Context, input *dto.UserLogin) (*domain.User, error) {
 	user, err := u.findUserByEmail(ctx, input.Email)
 	if err != nil {
-		return nil, customErr.ErrUserNotFound
+		return nil, err
 	}
 
 	if err = verifyPassword(input.Password, user.Password); err != nil {
@@ -116,7 +115,7 @@ func (u *userService) CreateProfile(ctx context.Context, profile *dto.UserProfil
 	}
 
 	if err = u.userRepository.SaveUser(ctx, user); err != nil {
-		return errors.New("error saving user")
+		return err
 	}
 
 	return nil
@@ -125,7 +124,7 @@ func (u *userService) CreateProfile(ctx context.Context, profile *dto.UserProfil
 func (u *userService) GetProfile(ctx context.Context, id uint) (*domain.User, error) {
 	user, err := u.findUserById(ctx, id)
 	if err != nil {
-		return nil, customErr.ErrUserNotFound
+		return nil, err
 	}
 	return user, nil
 }
