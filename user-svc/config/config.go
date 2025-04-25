@@ -12,6 +12,7 @@ type Config struct {
 	Server      Server
 	KafkaConfig KafkaConfig
 	Database    Database
+	JWT         JWT
 }
 
 type Server struct {
@@ -42,6 +43,11 @@ type Database struct {
 	MaxLifetime      time.Duration `env:"DB_MAX_LIFETIME"`
 	MaxIdleTime      time.Duration `env:"DB_MAX_IDLE_TIME"`
 	Timeout          time.Duration `env:"DB_TIMEOUT"`
+}
+
+type JWT struct {
+	Secret string        `env:"JWT_SECRET"`
+	Exp    time.Duration `env:"JWT_EXP"`
 }
 
 func LoadConfig() error {

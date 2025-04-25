@@ -15,8 +15,8 @@ import (
 type UserService interface {
 	Register(ctx context.Context, input *dto.UserSignup) error
 	Login(ctx context.Context, input *dto.UserLogin) (*domain.User, error)
-	ForgotPassword(ctx context.Context, email string) error
-	SetPassword(ctx context.Context, token, password string) error
+	ForgotPassword(ctx context.Context, input *dto.ForgotPassword) error
+	SetPassword(ctx context.Context, input *dto.SetPassword) error
 	CreateProfile(ctx context.Context, profile *dto.UserProfile) error
 	GetProfile(ctx context.Context, id uint) (*domain.User, error)
 	Authenticate(ctx *fiber.Ctx) (*domain.User, error)
@@ -64,11 +64,11 @@ func (u *userService) Login(ctx context.Context, input *dto.UserLogin) (*domain.
 	return user, nil
 }
 
-func (u *userService) ForgotPassword(ctx context.Context, email string) error {
+func (u *userService) ForgotPassword(ctx context.Context, input *dto.ForgotPassword) error {
 	return nil
 }
 
-func (u *userService) SetPassword(ctx context.Context, token, password string) error {
+func (u *userService) SetPassword(ctx context.Context, input *dto.SetPassword) error {
 	return nil
 }
 
