@@ -7,6 +7,7 @@ import (
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/domain"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/slg"
 	"gorm.io/gorm"
+	"strings"
 )
 
 type UserRepository interface {
@@ -26,7 +27,7 @@ func (u *userRepository) CreateUser(ctx context.Context, user *domain.User) erro
 	err := u.dbWrite.WithContext(ctx).Create(user).Error
 	if err != nil {
 		switch {
-		case errors.Is(err, gorm.ErrDuplicatedKey):
+		case errors.Is(err, gorm.ErrDuplicatedKey) || strings.Contains(err.Error(), "UNIQUE constraint failed"):
 			slg.Logger.Error("failed to create user: duplicate email", "error", err.Error())
 			return customErr.ErrDuplicateUser
 		default:
