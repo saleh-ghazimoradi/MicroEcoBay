@@ -40,7 +40,7 @@ func (u *userService) Register(ctx context.Context, input *dto.UserSignup) error
 	if err != nil {
 		return err
 	}
-	// TODO: token must be generated for the registeration
+
 	if err = u.userRepository.CreateUser(ctx, &domain.User{
 		Email:    input.Email,
 		Password: hashedPassword,
@@ -48,13 +48,15 @@ func (u *userService) Register(ctx context.Context, input *dto.UserSignup) error
 	}); err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func (u *userService) Login(ctx context.Context, input *dto.UserLogin) (*domain.User, error) {
 	user, err := u.findUserByEmail(ctx, input.Email)
-	if err != nil {
-		return nil, err
+	if user == nil || err != nil {
+		slg.Logger.Warn("invalid email or password")
+		return nil, errors.New("invalid email or password")
 	}
 
 	if err = verifyPassword(input.Password, user.Password); err != nil {
@@ -65,16 +67,56 @@ func (u *userService) Login(ctx context.Context, input *dto.UserLogin) (*domain.
 }
 
 func (u *userService) ForgotPassword(ctx context.Context, input *dto.ForgotPassword) error {
+	user, err := u.findUserByEmail(ctx, input.Email)
+	if err != nil {
+		slg.Logger.Warn("user not found")
+		return err
+	}
+
+	resetToken, err := generateHashedPassword(user.Email)
+	if err != nil {
+		slg.Logger.Error("error generating reset token", "error", err)
+		return errors.New("error generating reset token")
+	}
+
+	user.ResetToken = resetToken
+
+	if err := u.userRepository.SaveUser(ctx, user); err != nil {
+		slg.Logger.Error("error saving user", "error", err)
+		return err
+	}
+
 	return nil
 }
 
 func (u *userService) SetPassword(ctx context.Context, input *dto.SetPassword) error {
+	user, err := u.userRepository.FindUserByResetToken(ctx, input.Token)
+	if err != nil {
+		slg.Logger.Warn("invalid or expired token")
+		return errors.New("invalid or expired token")
+	}
+
+	hashedPassword, err := generateHashedPassword(input.Password)
+	if err != nil {
+		slg.Logger.Error("error generating hashed password", "error", err)
+		return err
+	}
+
+	user.Password = hashedPassword
+	user.ResetToken = ""
+
+	if err = u.userRepository.SaveUser(ctx, user); err != nil {
+		slg.Logger.Error("error saving user", "error", err)
+		return err
+	}
+
 	return nil
 }
 
 func (u *userService) CreateProfile(ctx context.Context, profile *dto.UserProfile) error {
 	user, err := u.findUserById(ctx, profile.UserId)
 	if err != nil {
+		slg.Logger.Warn("user not found")
 		return err
 	}
 
@@ -115,6 +157,7 @@ func (u *userService) CreateProfile(ctx context.Context, profile *dto.UserProfil
 	}
 
 	if err = u.userRepository.SaveUser(ctx, user); err != nil {
+		slg.Logger.Error("error saving user", "error", err)
 		return err
 	}
 
@@ -124,13 +167,21 @@ func (u *userService) CreateProfile(ctx context.Context, profile *dto.UserProfil
 func (u *userService) GetProfile(ctx context.Context, id uint) (*domain.User, error) {
 	user, err := u.findUserById(ctx, id)
 	if err != nil {
+		slg.Logger.Warn("user not found")
 		return nil, err
 	}
 	return user, nil
 }
 
 func (u *userService) Authenticate(ctx *fiber.Ctx) (*domain.User, error) {
-	return nil, nil
+	user := ctx.Locals("userId")
+	authUser, err := u.findUserById(ctx.Context(), user.(uint))
+	if err != nil {
+		slg.Logger.Warn("user not found")
+		return nil, err
+	}
+
+	return authUser, nil
 }
 
 func generateHashedPassword(password string) (string, error) {
