@@ -132,10 +132,6 @@ func (u *UserHandler) Me(ctx *fiber.Ctx) error {
 		return serverErrorResponse(ctx, err)
 	}
 
-	if err != nil {
-		return serverErrorResponse(ctx, err)
-	}
-
 	return successResponse(ctx, fiber.StatusOK, "user successfully authenticated", user)
 }
 

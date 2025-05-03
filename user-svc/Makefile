@@ -6,3 +6,6 @@ down:
 
 http:
 	go run . http
+
+test:
+	go test ./... -v
