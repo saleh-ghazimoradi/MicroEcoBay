@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/customErr"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/domain"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/dto"
 	"github.com/stretchr/testify/assert"
@@ -85,5 +86,23 @@ func TestRegister_Success(t *testing.T) {
 
 	err := uService.Register(ctx, &input)
 	assert.NoError(t, err)
+	userRepository.AssertExpectations(t)
+}
+
+func TestRegister_DuplicateUser(t *testing.T) {
+	userRepository := new(MockUserRepository)
+	producer := new(MockProducer)
+	uService := NewUserService(userRepository, producer)
+	ctx := context.Background()
+
+	input := dto.UserSignup{
+		Email:    "test@test.com",
+		Password: "password",
+		Phone:    "123456789",
+	}
+
+	userRepository.On("CreateUser", ctx, mock.Anything).Return(customErr.ErrDuplicateUser)
+	err := uService.Register(ctx, &input)
+	assert.ErrorIs(t, err, customErr.ErrDuplicateUser)
 	userRepository.AssertExpectations(t)
 }
