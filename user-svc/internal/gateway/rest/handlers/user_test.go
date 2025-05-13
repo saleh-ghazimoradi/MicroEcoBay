@@ -1,11 +1,17 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/domain"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/dto"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 )
 
 type MockUserService struct {
@@ -57,4 +63,37 @@ func (m *MockUserService) Authenticate(ctx *fiber.Ctx) (*domain.User, error) {
 		return nil, args.Error(1)
 	}
 	return user.(*domain.User), args.Error(1)
+}
+
+func setUpTest(t *testing.T) (*fiber.App, *MockUserService, *UserHandler) {
+	app := fiber.New()
+	mockUserService := new(MockUserService)
+	handler := NewUserHandler(mockUserService)
+	return app, mockUserService, handler
+}
+
+func TestUserHandler_Register(t *testing.T) {
+	app, mockUserService, handler := setUpTest(t)
+	app.Post("/register", handler.Register)
+
+	body := dto.UserSignup{
+		Email:    "test@test.com",
+		Password: "password123",
+		Phone:    "+123456789012",
+	}
+	bodyJSON, err := json.Marshal(body)
+	if err != nil {
+		t.Fatalf("failed to marshal body: %v", err)
+	}
+
+	mockUserService.On("Register", mock.Anything, &body).Return(nil)
+
+	req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewBuffer(bodyJSON))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("failed to execute request: %v", err)
+	}
+
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 }
