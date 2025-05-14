@@ -97,3 +97,52 @@ func TestUserHandler_Register(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 }
+
+func TestUserHandler_MissingField(t *testing.T) {
+	app, mockUserService, handler := setUpTest(t)
+	app.Post("/register", handler.Register)
+
+	body := dto.UserSignup{
+		Email:    "",
+		Password: "",
+		Phone:    "+123456789012",
+	}
+
+	bodyJSON, err := json.Marshal(body)
+	if err != nil {
+		t.Fatalf("failed to marshal body: %v", err)
+	}
+
+	mockUserService.On("Register", mock.Anything, &body).Return(nil)
+	req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewBuffer(bodyJSON))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("failed to execute request: %v", err)
+	}
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestUserHandler_ServiceError(t *testing.T) {
+	app, mockUserService, handler := setUpTest(t)
+	app.Post("/register", handler.Register)
+
+	body := dto.UserSignup{
+		Email:    "test@test.com",
+		Password: "password123",
+		Phone:    "+123456789012",
+	}
+
+	bodyJSON, err := json.Marshal(body)
+	if err != nil {
+		t.Fatalf("failed to marshal body: %v", err)
+	}
+	mockUserService.On("Register", mock.Anything, &body).Return(fiber.NewError(fiber.StatusInternalServerError, "service error"))
+	req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewBuffer(bodyJSON))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("failed to execute request: %v", err)
+	}
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+}

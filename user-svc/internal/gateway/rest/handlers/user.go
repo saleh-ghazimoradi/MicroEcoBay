@@ -49,7 +49,7 @@ func (u *UserHandler) Login(ctx *fiber.Ctx) error {
 		return serverErrorResponse(ctx, err)
 	}
 
-	return successResponse(ctx, fiber.StatusCreated, "user successfully login", token)
+	return successResponse(ctx, fiber.StatusOK, "user successfully login", token)
 }
 
 func (u *UserHandler) ForgotPassword(ctx *fiber.Ctx) error {
