@@ -4,32 +4,39 @@ import (
 	"errors"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/config"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/dto"
 	"strings"
 	"time"
 )
 
-func AuthMiddleware() fiber.Handler {
+type TokenService interface {
+	GenerateToken(userID uint, email string) (string, error)
+	VerifyToken(tokenString string) (*dto.AuthResponse, error)
+	AuthMiddleware() fiber.Handler
+}
+
+type AuthService struct {
+	jwtSecret string
+	jwtExp    time.Duration
+}
+
+func (a *AuthService) AuthMiddleware() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-
 		authHeader := ctx.Get("Authorization")
-
-		user, err := verifyToken(authHeader)
+		user, err := a.VerifyToken(authHeader)
 		if err != nil {
 			return ctx.Status(fiber.StatusUnauthorized).JSON(&fiber.Map{
-				"error": err,
+				"error": err.Error(),
 			})
 		}
 
 		ctx.Locals("userId", user.UserId)
 		ctx.Locals("user", user)
-
 		return ctx.Next()
 	}
 }
 
-func GenerateToken(userId uint, email string) (string, error) {
+func (a *AuthService) GenerateToken(userId uint, email string) (string, error) {
 	if userId == 0 || email == "" {
 		return "", errors.New("userId and email are required")
 	}
@@ -37,10 +44,10 @@ func GenerateToken(userId uint, email string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": userId,
 		"email":   email,
-		"exp":     jwt.NewNumericDate(time.Now().Add(config.AppConfig.JWT.Exp)),
+		"exp":     jwt.NewNumericDate(time.Now().Add(a.jwtExp)).Unix(),
 	})
 
-	tokenString, err := token.SignedString([]byte(config.AppConfig.JWT.Secret))
+	tokenString, err := token.SignedString([]byte(a.jwtSecret))
 	if err != nil {
 		return "", err
 	}
@@ -48,20 +55,18 @@ func GenerateToken(userId uint, email string) (string, error) {
 	return tokenString, nil
 }
 
-func verifyToken(tokenString string) (*dto.AuthResponse, error) {
+func (a *AuthService) VerifyToken(tokenString string) (*dto.AuthResponse, error) {
 	tokenArr := strings.Split(tokenString, " ")
-
 	if len(tokenArr) != 2 || tokenArr[0] != "Bearer" {
 		return nil, errors.New("invalid token")
 	}
 
 	tokenStr := tokenArr[1]
-
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
-		return []byte(config.AppConfig.JWT.Secret), nil
+		return []byte(a.jwtSecret), nil
 	})
 
 	if err != nil {
@@ -69,7 +74,6 @@ func verifyToken(tokenString string) (*dto.AuthResponse, error) {
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
-
 	if !ok || !token.Valid {
 		return nil, errors.New("invalid token")
 	}
@@ -83,4 +87,11 @@ func verifyToken(tokenString string) (*dto.AuthResponse, error) {
 		Email:  claims["email"].(string),
 		Exp:    claims["exp"].(float64),
 	}, nil
+}
+
+func NewAuthService(jwtSecret string, jwtExp time.Duration) *AuthService {
+	return &AuthService{
+		jwtSecret: jwtSecret,
+		jwtExp:    jwtExp,
+	}
 }

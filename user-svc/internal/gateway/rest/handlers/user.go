@@ -9,7 +9,8 @@ import (
 )
 
 type UserHandler struct {
-	userService service.UserService
+	userService  service.UserService
+	tokenService middlewares.TokenService
 }
 
 func (u *UserHandler) Register(ctx *fiber.Ctx) error {
@@ -44,7 +45,7 @@ func (u *UserHandler) Login(ctx *fiber.Ctx) error {
 		return invalidCredentialsResponse(ctx)
 	}
 
-	token, err := middlewares.GenerateToken(user.ID, user.Email)
+	token, err := u.tokenService.GenerateToken(user.ID, user.Email)
 	if err != nil {
 		return serverErrorResponse(ctx, err)
 	}
@@ -135,8 +136,9 @@ func (u *UserHandler) Me(ctx *fiber.Ctx) error {
 	return successResponse(ctx, fiber.StatusOK, "user successfully authenticated", user)
 }
 
-func NewUserHandler(userService service.UserService) *UserHandler {
+func NewUserHandler(userService service.UserService, tokenService middlewares.TokenService) *UserHandler {
 	return &UserHandler{
-		userService: userService,
+		userService:  userService,
+		tokenService: tokenService,
 	}
 }

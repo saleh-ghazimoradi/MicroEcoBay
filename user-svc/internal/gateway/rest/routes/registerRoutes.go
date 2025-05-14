@@ -5,6 +5,7 @@ import (
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/config"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/infra/queue"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/gateway/rest/handlers"
+	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/gateway/rest/middlewares"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/repository"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/service"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/slg"
@@ -22,12 +23,13 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 	userRepository := repository.NewUserRepository(db, db)
 
 	/* ---------- Services ---------- */
+	authService := middlewares.NewAuthService(config.AppConfig.JWT.Secret, config.AppConfig.JWT.Exp)
 	userService := service.NewUserService(userRepository, kafkaProducer)
 
 	/* ---------- Handlers ---------- */
 	healthCheckHandler := handlers.NewHealthCheckHandler()
-	userHandler := handlers.NewUserHandler(userService)
+	userHandler := handlers.NewUserHandler(userService, authService)
 
 	healthCheckRoute(v1, healthCheckHandler)
-	userRoutes(v1, userHandler)
+	userRoutes(v1, userHandler, authService)
 }
