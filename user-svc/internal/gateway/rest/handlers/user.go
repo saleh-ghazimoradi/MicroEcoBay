@@ -94,6 +94,9 @@ func (u *UserHandler) CreateProfile(ctx *fiber.Ctx) error {
 	}
 
 	userId := ctx.Locals("userId")
+	if userId == nil {
+		return errorResponse(ctx, fiber.StatusUnauthorized, "user ID not found in context")
+	}
 	payload.UserId = userId.(uint)
 
 	if err := u.userService.CreateProfile(ctx.Context(), &payload); err != nil {
@@ -126,9 +129,13 @@ func (u *UserHandler) Authentication(ctx *fiber.Ctx) error {
 }
 
 func (u *UserHandler) Me(ctx *fiber.Ctx) error {
-	userId := ctx.Locals("userId").(uint)
+	userId := ctx.Locals("userId")
+	if userId == nil {
+		return errorResponse(ctx, fiber.StatusUnauthorized, "user ID not found in context")
+	}
+	userIdVal := userId.(uint)
 
-	user, err := u.userService.GetProfile(ctx.Context(), userId)
+	user, err := u.userService.GetProfile(ctx.Context(), userIdVal)
 	if err != nil {
 		return serverErrorResponse(ctx, err)
 	}
