@@ -7,9 +7,9 @@ type CreateCategoryReq struct {
 }
 
 type UpdateCategoryReq struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Status      string `json:"status"`
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
+	Status      *string `json:"status"`
 }
 
 type CreateProductReq struct {
@@ -23,10 +23,10 @@ type CreateProductReq struct {
 }
 
 type UpdateProductReq struct {
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-	Price       float64 `json:"price"`
-	Stock       uint    `json:"stock"`
-	ImageURL    string  `json:"imageUrl"`
-	Status      string  `json:"status"`
+	Name        *string  `json:"name"`
+	Description *string  `json:"description"`
+	Price       *float64 `json:"price"`
+	Stock       *uint    `json:"stock"`
+	ImageURL    *string  `json:"imageUrl"`
+	Status      *string  `json:"status"`
 }
