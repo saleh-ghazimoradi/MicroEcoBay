@@ -11,7 +11,7 @@ import (
 func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 	v1 := app.Group("/v1")
 
-	productRepository := repository.NewCatalogRepository(db)
+	productRepository := repository.NewCatalogRepository(db, db)
 	productService := service.NewCatalogService(productRepository)
 	productHandler := handlers.NewCatalogHandler(productService)
 
