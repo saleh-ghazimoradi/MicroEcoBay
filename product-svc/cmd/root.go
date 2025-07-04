@@ -3,15 +3,16 @@ package cmd
 import (
 	"github.com/saleh-ghazimoradi/MicroEcoBay/product_service/config"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/product_service/slg"
-	"github.com/spf13/cobra"
 	"os"
 	"time"
+
+	"github.com/spf13/cobra"
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "product_service",
-	Short: "A brief description of your application",
+	Short: "product_service is a part of the MicroEcoBay microservices ecosystem",
 }
 
 func Execute() {
