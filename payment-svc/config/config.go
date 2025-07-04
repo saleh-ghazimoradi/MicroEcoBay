@@ -9,8 +9,19 @@ import (
 var AppConfig *Config
 
 type Config struct {
-	ServerConfig ServerConfig
-	Database     Database
+	Server   Server
+	Database Database
+}
+
+type Server struct {
+	BodyLimit    int           `env:"BODY_LIMIT"`    // 1024 * 1024
+	WriteTimeout time.Duration `env:"WRITE_TIMEOUT"` // 10s
+	ReadTimeout  time.Duration `env:"READ_TIMEOUT"`  // 5s
+	IdleTimeout  time.Duration `env:"IDLE_TIMEOUT"`  // 30s
+	RateLimit    int           `env:"RATE_LIMIT"`    // 100
+	RateLimitExp time.Duration `env:"RATE_EXP"`      // 60s
+	Port         string        `env:"PORT"`          // 3000
+	Timeout      time.Duration `env:"TIMEOUT"`       // 30s
 }
 
 type Database struct {
@@ -25,10 +36,6 @@ type Database struct {
 	MaxLifetime      time.Duration `env:"DB_MAX_LIFETIME"`
 	MaxIdleTime      time.Duration `env:"DB_MAX_IDLE_TIME"`
 	Timeout          time.Duration `env:"DB_TIMEOUT"`
-}
-
-type ServerConfig struct {
-	Port string `env:"SERVER_PORT"`
 }
 
 func LoadConfig() error {
