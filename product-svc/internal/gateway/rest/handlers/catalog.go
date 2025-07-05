@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/product_service/internal/dto"
+	"github.com/saleh-ghazimoradi/MicroEcoBay/product_service/internal/gateway/validator"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/product_service/internal/service"
 	"strconv"
 )
@@ -17,6 +18,10 @@ func (c *CatalogHandler) CreateCategory(ctx *fiber.Ctx) error {
 		return badRequestResponse(ctx, err)
 	}
 
+	if err := validator.Validate.Struct(payload); err != nil {
+		return badRequestResponse(ctx, err)
+	}
+
 	if err := c.catalogService.CreateCategory(ctx.Context(), payload); err != nil {
 		return serverErrorResponse(ctx, err)
 	}
@@ -28,6 +33,7 @@ func (c *CatalogHandler) GetAllCategories(ctx *fiber.Ctx) error {
 	if err != nil {
 		return notFoundResponse(ctx)
 	}
+
 	return successResponse(ctx, fiber.StatusOK, "category list", categories)
 }
 
@@ -39,6 +45,7 @@ func (c *CatalogHandler) GetCategoryById(ctx *fiber.Ctx) error {
 	if err != nil {
 		return notFoundResponse(ctx)
 	}
+
 	return successResponse(ctx, fiber.StatusOK, "category", category)
 }
 
@@ -61,6 +68,10 @@ func (c *CatalogHandler) UpdateCategory(ctx *fiber.Ctx) error {
 func (c *CatalogHandler) CreateProduct(ctx *fiber.Ctx) error {
 	var payload *dto.CreateProductReq
 	if err := ctx.BodyParser(&payload); err != nil {
+		return badRequestResponse(ctx, err)
+	}
+
+	if err := validator.Validate.Struct(payload); err != nil {
 		return badRequestResponse(ctx, err)
 	}
 
