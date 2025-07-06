@@ -54,6 +54,7 @@ func (u *userRepository) FindUserByEmail(ctx context.Context, email string) (*do
 func (u *userRepository) SaveUser(ctx context.Context, user *domain.User) error {
 	if err := u.dbWrite.WithContext(ctx).Save(user).Error; err != nil {
 		slg.Logger.Error("failed to save user", "error", err.Error())
+		return customErr.ErrSaveUser
 	}
 	return nil
 }
