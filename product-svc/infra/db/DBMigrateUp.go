@@ -1,7 +1,13 @@
 package db
 
-import "gorm.io/gorm"
+import (
+	"github.com/saleh-ghazimoradi/MicroEcoBay/product_service/internal/domain"
+	"gorm.io/gorm"
+)
 
 func PostDBMigrator(db *gorm.DB) error {
-	return db.AutoMigrate()
+	return db.AutoMigrate(
+		&domain.Category{},
+		&domain.Product{},
+	)
 }
