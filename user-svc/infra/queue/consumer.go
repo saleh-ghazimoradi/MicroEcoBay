@@ -14,17 +14,17 @@ type Consumer interface {
 }
 
 type consumer struct {
-	Reader      *kafka.Reader
-	Handler     Consumer
-	ServiceName string
+	reader      *kafka.Reader
+	handler     Consumer
+	serviceName string
 }
 
 func (c *consumer) Close() error {
-	return c.Reader.Close()
+	return c.reader.Close()
 }
 
 func (c *consumer) HandleMessage(message string) error {
-	return c.Handler.HandleMessage(message)
+	return c.handler.HandleMessage(message)
 }
 
 func (c *consumer) Listen(ctx context.Context) {
@@ -35,7 +35,7 @@ func (c *consumer) Listen(ctx context.Context) {
 			return
 		default:
 			ctxRead, cancel := context.WithTimeout(ctx, 5*time.Second)
-			msg, err := c.Reader.ReadMessage(ctxRead)
+			msg, err := c.reader.ReadMessage(ctxRead)
 			cancel()
 			if err != nil {
 				if ctx.Err() != nil {
@@ -47,7 +47,7 @@ func (c *consumer) Listen(ctx context.Context) {
 			}
 
 			slg.Logger.Info("Received message", "message", string(msg.Value))
-			if err = c.Handler.HandleMessage(string(msg.Value)); err != nil {
+			if err = c.handler.HandleMessage(string(msg.Value)); err != nil {
 				slg.Logger.Error("Error processing message", "error", err)
 			}
 		}
@@ -64,8 +64,8 @@ func NewConsumer(broker, topic, groupId string, handler Consumer) Consumer {
 	})
 
 	return &consumer{
-		Reader:      reader,
-		Handler:     handler,
-		ServiceName: "User Service",
+		reader:      reader,
+		handler:     handler,
+		serviceName: "User Service",
 	}
 }
