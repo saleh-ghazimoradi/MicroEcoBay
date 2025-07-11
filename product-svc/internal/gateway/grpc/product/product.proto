@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package product;
+
+option go_package = "internal/gateway/grpc/product";
+
+
+message GetProductRequest {
+  int32 id = 1;
+}
+
+message ProductResponse {
+  int32 id = 1;
+  string name = 2;
+  string categoryId = 3;
+  double price = 4;
+  int32 stock = 5;
+}
+
+service ProductService {
+  rpc GetProductById (GetProductRequest) returns (ProductResponse);
+}
