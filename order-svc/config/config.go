@@ -9,8 +9,9 @@ import (
 var AppConfig *Config
 
 type Config struct {
-	Server   Server
-	Database Database
+	Server      Server
+	KafkaConfig KafkaConfig
+	Database    Database
 }
 
 type Server struct {
@@ -22,6 +23,11 @@ type Server struct {
 	RateLimitExp time.Duration `env:"RATE_EXP"`      // 60s
 	Port         string        `env:"PORT"`          // 3000
 	Timeout      time.Duration `env:"TIMEOUT"`       // 30s
+}
+
+type KafkaConfig struct {
+	Broker string `env:"KAFKA_BROKER"`
+	Topic  string `env:"KAFKA_TOPIC"`
 }
 
 type Database struct {
@@ -45,7 +51,6 @@ func LoadConfig() error {
 		slg.Logger.Error("error loading config", "error", err)
 		return err
 	}
-
 	AppConfig = config
 
 	return nil
