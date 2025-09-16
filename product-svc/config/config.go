@@ -27,8 +27,8 @@ type Server struct {
 }
 
 type KafkaConfig struct {
-	Broker string `env:"KAFKA_BROKER"`
-	Topic  string `env:"KAFKA_TOPIC"`
+	Broker []string `env:"KAFKA_BROKER"`
+	Topic  string   `env:"KAFKA_TOPIC"`
 }
 
 type Database struct {
