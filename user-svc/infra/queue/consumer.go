@@ -2,70 +2,61 @@ package queue
 
 import (
 	"context"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/slg"
+	"fmt"
+	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/domain"
 	"github.com/segmentio/kafka-go"
-	"time"
 )
 
 type Consumer interface {
-	HandleMessage(message string) error
-	Listen(ctx context.Context)
+	Consume(ctx context.Context, handler func(message domain.Event) error) error
 	Close() error
 }
 
 type consumer struct {
-	reader      *kafka.Reader
-	handler     Consumer
-	serviceName string
+	reader *kafka.Reader
 }
 
-func (c *consumer) Close() error {
-	return c.reader.Close()
-}
-
-func (c *consumer) HandleMessage(message string) error {
-	return c.handler.HandleMessage(message)
-}
-
-func (c *consumer) Listen(ctx context.Context) {
+func (c *consumer) Consume(ctx context.Context, handler func(message domain.Event) error) error {
 	for {
 		select {
 		case <-ctx.Done():
-			slg.Logger.Info("Consumer listener is shutting down")
-			return
+			return ctx.Err()
 		default:
-			ctxRead, cancel := context.WithTimeout(ctx, 5*time.Second)
-			msg, err := c.reader.ReadMessage(ctxRead)
-			cancel()
+			msg, err := c.reader.ReadMessage(ctx)
 			if err != nil {
-				if ctx.Err() != nil {
-					slg.Logger.Info("Context cancelled, exiting listen loop")
-					return
-				}
-				slg.Logger.Error("Error reading message", "error", err)
-				continue
+				return fmt.Errorf("failed to read message: %w", err)
 			}
 
-			slg.Logger.Info("Received message", "message", string(msg.Value))
-			if err = c.handler.HandleMessage(string(msg.Value)); err != nil {
-				slg.Logger.Error("Error processing message", "error", err)
+			if err := handler(domain.Event{
+				Key:   msg.Key,
+				Value: msg.Value,
+			}); err != nil {
+				return fmt.Errorf("failed to handle message: %w", err)
+			}
+
+			if err := c.reader.CommitMessages(ctx, msg); err != nil {
+				return fmt.Errorf("failed to commit message: %w", err)
 			}
 		}
 	}
 }
 
-func NewConsumer(broker, topic, groupId string, handler Consumer) Consumer {
+func (c *consumer) Close() error {
+	if err := c.reader.Close(); err != nil {
+		return fmt.Errorf("failed to close consumer: %w", err)
+	}
+	return nil
+}
+
+func NewConsumer(brokers []string, groupId, topic string) Consumer {
 	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:  []string{broker},
+		Brokers:  brokers,
 		GroupID:  groupId,
 		Topic:    topic,
 		MinBytes: 10e3,
 		MaxBytes: 10e6,
 	})
-
 	return &consumer{
-		reader:      reader,
-		handler:     handler,
-		serviceName: "User Service",
+		reader: reader,
 	}
 }

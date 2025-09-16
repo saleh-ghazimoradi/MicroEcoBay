@@ -2,12 +2,14 @@ package queue
 
 import (
 	"context"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/slg"
+	"fmt"
+	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/domain"
 	"github.com/segmentio/kafka-go"
+	"time"
 )
 
 type Producer interface {
-	PublishMessage(ctx context.Context, key, value []byte) error
+	Produce(ctx context.Context, event domain.Event) error
 	Close() error
 }
 
@@ -15,52 +17,36 @@ type producer struct {
 	writer *kafka.Writer
 }
 
-func (p *producer) PublishMessage(ctx context.Context, key, value []byte) error {
-	return p.writer.WriteMessages(ctx, kafka.Message{
-		Key:   key,
-		Value: value,
-	})
+func (p *producer) Produce(ctx context.Context, event domain.Event) error {
+	if err := p.writer.WriteMessages(ctx, kafka.Message{
+		Key:   event.Key,
+		Value: event.Value,
+	}); err != nil {
+		return fmt.Errorf("failed to produce event: %w", err)
+	}
+	return nil
 }
 
 func (p *producer) Close() error {
-	return p.writer.Close()
+	if err := p.writer.Close(); err != nil {
+		return fmt.Errorf("failed to close producer: %w", err)
+	}
+	return nil
 }
 
-func createTopic(broker, topic string) error {
-	conn, err := kafka.Dial("tcp", broker)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	partitions, err := conn.ReadPartitions()
-	if err != nil {
-		return err
-	}
-
-	for _, p := range partitions {
-		slg.Logger.Info("Partition found", "partition", p)
-		if p.Topic == topic {
-			return nil
-		}
-	}
-
-	return conn.CreateTopics(
-		kafka.TopicConfig{
-			Topic:             topic,
-			NumPartitions:     1,
-			ReplicationFactor: 1,
-		})
-}
-
-func NewProducer(broker, topic string) Producer {
-	if err := createTopic(broker, topic); err != nil {
-		slg.Logger.Error("Error creating topic", "error", err)
+func NewProducer(brokers []string, topic string) Producer {
+	writer := &kafka.Writer{
+		Addr:                   kafka.TCP(brokers...),
+		Topic:                  topic,
+		Balancer:               &kafka.LeastBytes{},
+		RequiredAcks:           kafka.RequireAll,
+		MaxAttempts:            3,
+		WriteTimeout:           10 * time.Second,
+		ReadTimeout:            10 * time.Second,
+		Compression:            kafka.Snappy,
+		AllowAutoTopicCreation: true,
 	}
 	return &producer{
-		writer: &kafka.Writer{
-			Addr:  kafka.TCP(broker),
-			Topic: topic,
-		},
+		writer: writer,
 	}
 }
