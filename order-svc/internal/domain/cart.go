@@ -14,6 +14,7 @@ type CartItem struct {
 
 type Cart struct {
 	gorm.Model
+	UserId    uint       `gorm:"index" json:"user_id"`
 	ProductID uint       `gorm:"uniqueIndex" json:"product_id"`
 	Items     []CartItem `gorm:"constraint:OnDelete:CASCADE" json:"items"`
 }
