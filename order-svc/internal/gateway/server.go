@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/order_service/config"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/order_service/infra/db"
+	"github.com/saleh-ghazimoradi/MicroEcoBay/order_service/internal/gateway/rest/routes"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/order_service/slg"
 	"os"
 	"os/signal"
@@ -64,7 +65,7 @@ func Server() error {
 	app.Use(recover.New())
 	app.Use(logger.New())
 
-	//routes.RegisterRoutes(app, d)
+	routes.RegisterRoutes(app, d)
 
 	slg.Logger.Info("Starting server", "port", config.AppConfig.Server.Port)
 
