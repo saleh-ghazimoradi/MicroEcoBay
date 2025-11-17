@@ -16,8 +16,11 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 	cartRepository := repository.NewCartRepository(db, db)
 	cartService := service.NewCartService(cartRepository)
 	cartHandler := handlers.NewCartHandler(cartService)
+	orderRepository := repository.NewOrderRepository(db, db)
+	orderService := service.NewOrderService(orderRepository)
+	orderHandler := handlers.NewOrderHandler(orderService)
 
-	cartRoutes(v1, cartHandler)
 	healthRoute(v1, healthHandler)
-
+	cartRoutes(v1, cartHandler)
+	orderRoutes(v1, orderHandler)
 }
