@@ -3,9 +3,8 @@ package repository
 import (
 	"context"
 	"errors"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/customErr"
+	"github.com/rs/zerolog"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/domain"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/slg"
 	"gorm.io/gorm"
 	"strings"
 )
@@ -21,6 +20,7 @@ type UserRepository interface {
 type userRepository struct {
 	dbWrite *gorm.DB
 	dbRead  *gorm.DB
+	logger  *zerolog.Logger
 }
 
 func (u *userRepository) CreateUser(ctx context.Context, user *domain.User) error {
@@ -28,8 +28,8 @@ func (u *userRepository) CreateUser(ctx context.Context, user *domain.User) erro
 	if err != nil {
 		switch {
 		case errors.Is(err, gorm.ErrDuplicatedKey) || strings.Contains(err.Error(), "UNIQUE constraint failed"):
-			slg.Logger.Error("failed to create user: duplicate email", "error", err.Error())
-			return customErr.ErrDuplicateUser
+			u.logger.Warn().Err(err).Msg("duplicate user detected")
+			return ErrDuplicateUser
 		default:
 			return err
 		}
@@ -42,8 +42,8 @@ func (u *userRepository) FindUserByEmail(ctx context.Context, email string) (*do
 	if err := u.dbRead.WithContext(ctx).Preload("Address").First(&user, "email = ?", email).Error; err != nil {
 		switch {
 		case errors.Is(err, gorm.ErrRecordNotFound):
-			slg.Logger.Warn("user not found", "email", email)
-			return nil, customErr.ErrUserNotFound
+			u.logger.Debug().Str("email", email).Msg("user not found")
+			return nil, ErrUserNotFound
 		default:
 			return nil, err
 		}
@@ -53,8 +53,8 @@ func (u *userRepository) FindUserByEmail(ctx context.Context, email string) (*do
 
 func (u *userRepository) SaveUser(ctx context.Context, user *domain.User) error {
 	if err := u.dbWrite.WithContext(ctx).Save(user).Error; err != nil {
-		slg.Logger.Error("failed to save user", "error", err.Error())
-		return customErr.ErrSaveUser
+		u.logger.Warn().Err(err).Uint("user_id", user.ID).Msg("failed to save user")
+		return ErrSaveUser
 	}
 	return nil
 }
@@ -64,8 +64,8 @@ func (u *userRepository) FindUserByResetToken(ctx context.Context, token string)
 	if err := u.dbRead.WithContext(ctx).Where("reset_token = ?", token).First(&user).Error; err != nil {
 		switch {
 		case errors.Is(err, gorm.ErrRecordNotFound):
-			slg.Logger.Warn("user not found", "token", token)
-			return nil, customErr.ErrInvalidUserResetToken
+			u.logger.Info().Msg("invalid reset token")
+			return nil, ErrInvalidUserResetToken
 		default:
 			return nil, err
 		}
@@ -78,8 +78,8 @@ func (u *userRepository) FindUserById(ctx context.Context, id uint) (*domain.Use
 	if err := u.dbRead.WithContext(ctx).First(&user, id).Error; err != nil {
 		switch {
 		case errors.Is(err, gorm.ErrRecordNotFound):
-			slg.Logger.Warn("user not found", "id", id)
-			return nil, customErr.ErrUserNotFound
+			u.logger.Debug().Uint("user_id", id).Msg("user not found")
+			return nil, ErrUserNotFound
 		default:
 			return nil, err
 		}
@@ -87,9 +87,10 @@ func (u *userRepository) FindUserById(ctx context.Context, id uint) (*domain.Use
 	return &user, nil
 }
 
-func NewUserRepository(dbWrite *gorm.DB, dbRead *gorm.DB) UserRepository {
+func NewUserRepository(dbWrite *gorm.DB, dbRead *gorm.DB, logger *zerolog.Logger) UserRepository {
 	return &userRepository{
 		dbWrite: dbWrite,
 		dbRead:  dbRead,
+		logger:  logger,
 	}
 }
