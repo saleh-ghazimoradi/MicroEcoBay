@@ -2,11 +2,15 @@ package config
 
 import (
 	"github.com/caarlos0/env/v11"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/slg"
+	"sync"
 	"time"
 )
 
-var AppConfig *Config
+var (
+	instance *Config
+	once     sync.Once
+	initErr  error
+)
 
 type Config struct {
 	Server      Server
@@ -50,14 +54,13 @@ type JWT struct {
 	Exp    time.Duration `env:"JWT_EXP"`
 }
 
-func LoadConfig() error {
-	config := &Config{}
-
-	if err := env.Parse(config); err != nil {
-		slg.Logger.Error("error loading config", "error", err)
-		return err
-	}
-	AppConfig = config
-
-	return nil
+func GetConfig() (*Config, error) {
+	once.Do(func() {
+		instance = &Config{}
+		initErr = env.Parse(instance)
+		if initErr != nil {
+			instance = nil
+		}
+	})
+	return instance, initErr
 }
