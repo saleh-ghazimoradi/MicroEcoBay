@@ -1,44 +1,58 @@
 package routes
 
 import (
-	"context"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/product_service/config"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/product_service/infra/queue"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/product_service/internal/gateway/grpc/product"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/product_service/internal/gateway/rest/handlers"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/product_service/internal/repository"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/product_service/internal/service"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/product_service/slg"
-	"google.golang.org/grpc"
-	"gorm.io/gorm"
-	"net"
 )
 
-func RegisterRoutes(app *fiber.App, db *gorm.DB) {
-	v1 := app.Group("/v1")
+type Register struct {
+	config       *config.Config
+	healthRoute  *HealthRoutes
+	catalogRoute *CatalogRoutes
+}
 
-	healthCheckHandler := handlers.NewHealthCheckHandler()
-	catalogRepository := repository.NewCatalogRepository(db, db)
-	catalogService := service.NewCatalogService(catalogRepository)
-	catalogHandler := handlers.NewCatalogHandler(catalogService)
+type Options func(*Register)
 
-	kafkaConsumer := queue.NewConsumer(catalogService, config.AppConfig.KafkaConfig.Broker, "product-update-topic", "catalog-service-group")
-	go kafkaConsumer.Listen(context.Background())
+func WithHealthRoute(healthRoute *HealthRoutes) func(*Register) {
+	return func(r *Register) {
+		r.healthRoute = healthRoute
+	}
+}
 
-	go func() {
-		list, err := net.Listen("tcp", ":50052")
-		if err != nil {
-			slg.Logger.Error("failed to listen grpc", "error", err.Error())
-		}
-		grpcServer := grpc.NewServer()
-		productServer := product.NewProductGRPCService(catalogService)
-		product.RegisterProductServiceServer(grpcServer, productServer)
-		if err := grpcServer.Serve(list); err != nil {
-			slg.Logger.Error("failed to start grpc server", "error", err.Error())
-		}
-	}()
+func WithCatalogRoute(catalogRoute *CatalogRoutes) func(*Register) {
+	return func(r *Register) {
+		r.catalogRoute = catalogRoute
+	}
+}
 
-	healthCheckRoute(v1, healthCheckHandler)
-	CatalogRoutes(v1, catalogHandler)
+func (r *Register) RegisterRoutes() *fiber.App {
+	app := fiber.New(fiber.Config{
+		ReadTimeout:  r.config.Server.ReadTimeout,
+		WriteTimeout: r.config.Server.WriteTimeout,
+		IdleTimeout:  r.config.Server.IdleTimeout,
+	})
+
+	app.Use(logger.New())
+	app.Use(recover.New())
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "*",
+		AllowHeaders: "Content-Type, Accept, Authorization",
+		AllowMethods: "GET, POST, PUT, PATCH, DELETE",
+	}))
+
+	r.healthRoute.HealthRoute(app)
+	r.catalogRoute.CatalogRoute(app)
+
+	return app
+}
+
+func NewRegister(opts ...Options) *Register {
+	r := &Register{}
+	for _, f := range opts {
+		f(r)
+	}
+	return r
 }
