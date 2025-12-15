@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/customErr"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/domain"
+	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -26,7 +26,8 @@ func setupTestDB(t *testing.T) (*gorm.DB, *gorm.DB) {
 
 func TestUserRepository_CreateUser(t *testing.T) {
 	dbWrite, dbRead := setupTestDB(t)
-	repo := NewUserRepository(dbWrite, dbRead)
+	zeroLogger := logger.NewLogger()
+	repo := NewUserRepository(dbWrite, dbRead, &zeroLogger)
 	ctx := context.Background()
 
 	tests := []struct {
@@ -51,7 +52,7 @@ func TestUserRepository_CreateUser(t *testing.T) {
 				FirstName: "John",
 				LastName:  "Doe",
 			},
-			wantErr: customErr.ErrDuplicateUser,
+			wantErr: ErrDuplicateUser,
 		},
 	}
 
@@ -74,7 +75,8 @@ func TestUserRepository_CreateUser(t *testing.T) {
 
 func TestUserRepository_FindUserByEmail(t *testing.T) {
 	dbWrite, dbRead := setupTestDB(t)
-	repo := NewUserRepository(dbWrite, dbRead)
+	zeroLogger := logger.NewLogger()
+	repo := NewUserRepository(dbWrite, dbRead, &zeroLogger)
 	ctx := context.Background()
 
 	user := &domain.User{
@@ -105,7 +107,7 @@ func TestUserRepository_FindUserByEmail(t *testing.T) {
 		{
 			name:    "user not found",
 			email:   "notfound@example.com",
-			wantErr: customErr.ErrUserNotFound,
+			wantErr: ErrUserNotFound,
 		},
 	}
 
@@ -127,7 +129,8 @@ func TestUserRepository_FindUserByEmail(t *testing.T) {
 
 func TestUserRepository_SaveUser(t *testing.T) {
 	dbWrite, dbRead := setupTestDB(t)
-	repo := NewUserRepository(dbWrite, dbRead)
+	zeroLogger := logger.NewLogger()
+	repo := NewUserRepository(dbWrite, dbRead, &zeroLogger)
 	ctx := context.Background()
 
 	user := &domain.User{
@@ -152,7 +155,8 @@ func TestUserRepository_SaveUser(t *testing.T) {
 
 func TestUserRepository_FindUserByResetToken(t *testing.T) {
 	dbWrite, dbRead := setupTestDB(t)
-	repo := NewUserRepository(dbWrite, dbRead)
+	zeroLogger := logger.NewLogger()
+	repo := NewUserRepository(dbWrite, dbRead, &zeroLogger)
 	ctx := context.Background()
 
 	user := &domain.User{
@@ -176,7 +180,7 @@ func TestUserRepository_FindUserByResetToken(t *testing.T) {
 		{
 			name:    "invalid token",
 			token:   "invalid",
-			wantErr: customErr.ErrInvalidUserResetToken,
+			wantErr: ErrInvalidUserResetToken,
 		},
 	}
 
@@ -197,7 +201,8 @@ func TestUserRepository_FindUserByResetToken(t *testing.T) {
 
 func TestUserRepository_FindUserById(t *testing.T) {
 	dbWrite, dbRead := setupTestDB(t)
-	repo := NewUserRepository(dbWrite, dbRead)
+	zeroLogger := logger.NewLogger()
+	repo := NewUserRepository(dbWrite, dbRead, &zeroLogger)
 	ctx := context.Background()
 
 	user := &domain.User{
@@ -223,7 +228,7 @@ func TestUserRepository_FindUserById(t *testing.T) {
 		{
 			name:    "user not found",
 			id:      999,
-			wantErr: customErr.ErrUserNotFound,
+			wantErr: ErrUserNotFound,
 		},
 	}
 
