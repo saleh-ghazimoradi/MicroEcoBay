@@ -6,7 +6,6 @@ import (
 	"github.com/saleh-ghazimoradi/MicroEcoBay/order_service/internal/domain"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/order_service/internal/dto"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/order_service/internal/repository"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/order_service/slg"
 )
 
 type OrderService interface {
@@ -63,7 +62,6 @@ func (o *orderService) CreateOrder(ctx context.Context, input *dto.CreateOrderRe
 func (o *orderService) GetOrderByUser(ctx context.Context, userId uint) ([]*domain.Order, error) {
 	orders, err := o.orderRepository.GetOrderByUser(ctx, userId)
 	if err != nil {
-		slg.Logger.Error("Error getting orders by user:", err)
 		return nil, errors.New("failed to retrieve orders")
 	}
 	return orders, nil
@@ -72,7 +70,6 @@ func (o *orderService) GetOrderByUser(ctx context.Context, userId uint) ([]*doma
 func (o *orderService) GetOrderById(ctx context.Context, orderId, userId uint) (*domain.Order, error) {
 	order, err := o.orderRepository.GetOrderById(ctx, orderId, userId)
 	if err != nil {
-		slg.Logger.Error("Error getting order by id:", err)
 		return nil, errors.New("order does not exist")
 	}
 	return order, nil
