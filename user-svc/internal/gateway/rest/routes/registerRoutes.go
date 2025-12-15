@@ -5,9 +5,11 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/config"
 )
 
 type Register struct {
+	config      *config.Config
 	healthRoute *HealthRoutes
 	userRoute   *UserRoutes
 }
@@ -26,8 +28,18 @@ func WithUserRoute(userRoute *UserRoutes) Options {
 	}
 }
 
+func WithConfig(config *config.Config) Options {
+	return func(r *Register) {
+		r.config = config
+	}
+}
+
 func (r *Register) RegisterRoutes() *fiber.App {
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		ReadTimeout:  r.config.Server.ReadTimeout,
+		WriteTimeout: r.config.Server.WriteTimeout,
+		IdleTimeout:  r.config.Server.IdleTimeout,
+	})
 
 	app.Use(logger.New())
 	app.Use(recover.New())
