@@ -5,9 +5,20 @@ import (
 	"github.com/saleh-ghazimoradi/MicroEcoBay/order_service/internal/gateway/rest/handlers"
 )
 
-func cartRoutes(route fiber.Router, cartHandler *handlers.CartHandler) {
-	route.Post("/cart", cartHandler.CreateCart)
-	route.Get("/cart/:id", cartHandler.GetCart)
-	route.Patch("/cart", cartHandler.UpdateCart)
-	route.Delete("/cart/:productId", cartHandler.DeleteCart)
+type CartRoutes struct {
+	cartHandler *handlers.CartHandler
+}
+
+func (c *CartRoutes) CarteRoute(app *fiber.App) {
+	v1 := app.Group("/v1")
+	v1.Post("/cart", c.cartHandler.CreateCart)
+	v1.Get("/cart/:id", c.cartHandler.GetCart)
+	v1.Patch("/cart", c.cartHandler.UpdateCart)
+	v1.Delete("/cart/:productId", c.cartHandler.DeleteCart)
+}
+
+func NewCartRoutes(cartHandler *handlers.CartHandler) *CartRoutes {
+	return &CartRoutes{
+		cartHandler: cartHandler,
+	}
 }

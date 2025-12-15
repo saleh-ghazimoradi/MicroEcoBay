@@ -5,6 +5,17 @@ import (
 	"github.com/saleh-ghazimoradi/MicroEcoBay/order_service/internal/gateway/rest/handlers"
 )
 
-func healthRoute(route fiber.Router, healthHandler *handlers.HealthHandler) {
-	route.Get("/health", healthHandler.Health)
+type HealthRoutes struct {
+	healthHandler *handlers.HealthCheckHandler
+}
+
+func (h *HealthRoutes) HealthRoute(app *fiber.App) {
+	v1 := app.Group("/v1")
+	v1.Get("/health", h.healthHandler.HealthCheck)
+}
+
+func NewHealthRoutes(healthHandler *handlers.HealthCheckHandler) *HealthRoutes {
+	return &HealthRoutes{
+		healthHandler: healthHandler,
+	}
 }
