@@ -3,7 +3,7 @@ package handlers
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/product_service/internal/dto"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/product_service/internal/gateway/validator"
+	"github.com/saleh-ghazimoradi/MicroEcoBay/product_service/internal/helper"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/product_service/internal/service"
 	"strconv"
 )
@@ -15,26 +15,23 @@ type CatalogHandler struct {
 func (c *CatalogHandler) CreateCategory(ctx *fiber.Ctx) error {
 	var payload *dto.CreateCategoryReq
 	if err := ctx.BodyParser(&payload); err != nil {
-		return badRequestResponse(ctx, err)
-	}
-
-	if err := validator.Validate.Struct(payload); err != nil {
-		return badRequestResponse(ctx, err)
+		return helper.BadRequestResponse(ctx, "given invalid payload", err)
 	}
 
 	if err := c.catalogService.CreateCategory(ctx.Context(), payload); err != nil {
-		return serverErrorResponse(ctx, err)
+		return helper.InternalServerError(ctx, "failed to create category", err)
 	}
-	return successResponse(ctx, fiber.StatusCreated, "category created", payload)
+
+	return helper.CreatedResponse(ctx, "category successfully created", payload)
 }
 
 func (c *CatalogHandler) GetAllCategories(ctx *fiber.Ctx) error {
 	categories, err := c.catalogService.GetAllCategories(ctx.Context())
 	if err != nil {
-		return notFoundResponse(ctx)
+		return helper.NotFoundResponse(ctx, "Category not found")
 	}
 
-	return successResponse(ctx, fiber.StatusOK, "category list", categories)
+	return helper.SuccessResponse(ctx, "category successfully retrieved", categories)
 }
 
 func (c *CatalogHandler) GetCategoryById(ctx *fiber.Ctx) error {
@@ -43,52 +40,48 @@ func (c *CatalogHandler) GetCategoryById(ctx *fiber.Ctx) error {
 
 	category, err := c.catalogService.GetCategoryById(ctx.Context(), unId)
 	if err != nil {
-		return notFoundResponse(ctx)
+		return helper.NotFoundResponse(ctx, "category not found")
 	}
 
-	return successResponse(ctx, fiber.StatusOK, "category", category)
+	return helper.SuccessResponse(ctx, "category successfully retrieved", category)
 }
 
 func (c *CatalogHandler) UpdateCategory(ctx *fiber.Ctx) error {
 	var payload *dto.UpdateCategoryReq
 	if err := ctx.BodyParser(&payload); err != nil {
-		return badRequestResponse(ctx, err)
+		return helper.BadRequestResponse(ctx, "given invalid payload", err)
 	}
 
 	id, _ := strconv.Atoi(ctx.Params("id"))
 	unId := uint(id)
 
 	if err := c.catalogService.UpdateCategory(ctx.Context(), unId, payload); err != nil {
-		return serverErrorResponse(ctx, err)
+		return helper.InternalServerError(ctx, "failed to update category", err)
 	}
 
-	return successResponse(ctx, fiber.StatusOK, "category updated", payload)
+	return helper.SuccessResponse(ctx, "category successfully updated", payload)
 }
 
 func (c *CatalogHandler) CreateProduct(ctx *fiber.Ctx) error {
 	var payload *dto.CreateProductReq
 	if err := ctx.BodyParser(&payload); err != nil {
-		return badRequestResponse(ctx, err)
-	}
-
-	if err := validator.Validate.Struct(payload); err != nil {
-		return badRequestResponse(ctx, err)
+		return helper.BadRequestResponse(ctx, "given invalid payload", err)
 	}
 
 	if err := c.catalogService.CreateProduct(ctx.Context(), payload); err != nil {
-		return serverErrorResponse(ctx, err)
+		return helper.InternalServerError(ctx, "failed to create product", err)
 	}
 
-	return successResponse(ctx, fiber.StatusCreated, "product created", payload)
+	return helper.CreatedResponse(ctx, "product successfully created", payload)
 }
 
 func (c *CatalogHandler) GetAllProducts(ctx *fiber.Ctx) error {
 	products, err := c.catalogService.GetAllProducts(ctx.Context())
 	if err != nil {
-		return notFoundResponse(ctx)
+		return helper.NotFoundResponse(ctx, "Product not found")
 	}
 
-	return successResponse(ctx, fiber.StatusOK, "product list", products)
+	return helper.SuccessResponse(ctx, "product successfully retrieved", products)
 }
 
 func (c *CatalogHandler) GetProductById(ctx *fiber.Ctx) error {
@@ -97,26 +90,26 @@ func (c *CatalogHandler) GetProductById(ctx *fiber.Ctx) error {
 
 	product, err := c.catalogService.GetProductById(ctx.Context(), unId)
 	if err != nil {
-		return notFoundResponse(ctx)
+		return helper.NotFoundResponse(ctx, "Product not found")
 	}
 
-	return successResponse(ctx, fiber.StatusOK, "product", product)
+	return helper.SuccessResponse(ctx, "product successfully retrieved", product)
 }
 
 func (c *CatalogHandler) UpdateProduct(ctx *fiber.Ctx) error {
 	var payload *dto.UpdateProductReq
 	if err := ctx.BodyParser(&payload); err != nil {
-		return badRequestResponse(ctx, err)
+		return helper.BadRequestResponse(ctx, "given invalid payload", err)
 	}
 
 	id, _ := strconv.Atoi(ctx.Params("id"))
 	unId := uint(id)
 
 	if err := c.catalogService.UpdateProduct(ctx.Context(), unId, payload); err != nil {
-		return serverErrorResponse(ctx, err)
+		return helper.InternalServerError(ctx, "failed to update category", err)
 	}
 
-	return successResponse(ctx, fiber.StatusOK, "product updated", payload)
+	return helper.SuccessResponse(ctx, "product successfully updated", payload)
 }
 
 func NewCatalogHandler(catalogService service.CatalogService) *CatalogHandler {
