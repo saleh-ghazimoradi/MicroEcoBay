@@ -2,27 +2,28 @@ package config
 
 import (
 	"github.com/caarlos0/env/v11"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/order_service/slg"
+	"sync"
 	"time"
 )
 
-var AppConfig *Config
+var (
+	instance *Config
+	once     sync.Once
+	initErr  error
+)
 
 type Config struct {
 	Server      Server
 	KafkaConfig KafkaConfig
-	Database    Database
+	Postgresql  Postgresql
 }
 
 type Server struct {
-	BodyLimit    int           `env:"BODY_LIMIT"`    // 1024 * 1024
-	WriteTimeout time.Duration `env:"WRITE_TIMEOUT"` // 10s
-	ReadTimeout  time.Duration `env:"READ_TIMEOUT"`  // 5s
-	IdleTimeout  time.Duration `env:"IDLE_TIMEOUT"`  // 30s
-	RateLimit    int           `env:"RATE_LIMIT"`    // 100
-	RateLimitExp time.Duration `env:"RATE_EXP"`      // 60s
-	Port         string        `env:"PORT"`          // 3000
-	Timeout      time.Duration `env:"TIMEOUT"`       // 30s
+	Host         string        `env:"SERVER_HOST"`
+	Port         string        `env:"SERVER_PORT"`
+	IdleTimeout  time.Duration `env:"SERVER_IDLE_TIMEOUT"`
+	ReadTimeout  time.Duration `env:"SERVER_READ_TIMEOUT"`
+	WriteTimeout time.Duration `env:"SERVER_WRITE_TIMEOUT"`
 }
 
 type KafkaConfig struct {
@@ -30,28 +31,26 @@ type KafkaConfig struct {
 	Topic  string `env:"KAFKA_TOPIC"`
 }
 
-type Database struct {
-	DatabaseHost     string        `env:"DATABASE_HOST"`
-	DatabasePort     string        `env:"DATABASE_PORT"`
-	DatabaseUser     string        `env:"DATABASE_USER"`
-	DatabasePassword string        `env:"DATABASE_PASSWORD"`
-	DatabaseName     string        `env:"DATABASE_NAME"`
-	DatabaseSSLMode  string        `env:"DATABASE_SSLMODE"`
-	MaxOpenConn      int           `env:"DB_MAX_OPEN_CONNECTIONS"`
-	MaxIdleConn      int           `env:"DB_MAX_IDLE_CONNECTIONS"`
-	MaxLifetime      time.Duration `env:"DB_MAX_LIFETIME"`
-	MaxIdleTime      time.Duration `env:"DB_MAX_IDLE_TIME"`
-	Timeout          time.Duration `env:"DB_TIMEOUT"`
+type Postgresql struct {
+	Host        string        `env:"POSTGRES_HOST"`
+	Port        string        `env:"POSTGRES_PORT"`
+	User        string        `env:"POSTGRES_USER"`
+	Password    string        `env:"POSTGRES_PASSWORD"`
+	Name        string        `env:"POSTGRES_NAME"`
+	MaxOpenConn int           `env:"POSTGRES_MAX_OPEN_CONN"`
+	MaxIdleConn int           `env:"POSTGRES_MAX_IDLE_CONN"`
+	MaxIdleTime time.Duration `env:"POSTGRES_MAX_IDLE_TIME"`
+	SSLMode     string        `env:"POSTGRES_SSL_MODE"`
+	Timeout     time.Duration `env:"POSTGRES_TIMEOUT"`
 }
 
-func LoadConfig() error {
-	config := &Config{}
-
-	if err := env.Parse(config); err != nil {
-		slg.Logger.Error("error loading config", "error", err)
-		return err
-	}
-	AppConfig = config
-
-	return nil
+func GetConfig() (*Config, error) {
+	once.Do(func() {
+		instance = &Config{}
+		initErr = env.Parse(instance)
+		if initErr != nil {
+			instance = nil
+		}
+	})
+	return instance, initErr
 }
