@@ -18,7 +18,7 @@ import (
 // httpCmd represents the http command
 var httpCmd = &cobra.Command{
 	Use:   "http",
-	Short: "It establishes user service http connection",
+	Short: "It establishes product service http connection",
 
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("http called")
