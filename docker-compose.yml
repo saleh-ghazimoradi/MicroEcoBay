@@ -1,8 +1,9 @@
 services:
   user_db_server:
     image: postgres:latest
+    container_name: ${USER_CONTAINER_NAME}
     ports:
-      - "5454:5432"
+      - ${DB_PORT_UMS}:5432
     deploy:
       mode: replicated
       replicas: 1
@@ -15,8 +16,9 @@ services:
 
   product_db_server:
     image: postgres:latest
+    container_name: ${PRODUCT_CONTAINER_NAME}
     ports:
-      - "5455:5432"
+      - ${DB_PORT_PMS}:5432
     deploy:
       mode: replicated
       replicas: 1
@@ -26,6 +28,21 @@ services:
       POSTGRES_PASSWORD: ${PRODUCT_PMS_PASSWORD}
     volumes:
       - product-db-data:/var/lib/postgresql/data
+
+  order_db_server:
+    image: postgres:latest
+    container_name: ${ORDER_CONTAINER_NAME}
+    ports:
+      - ${DB_PORT_OMS}:5432
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      POSTGRES_DB: ${DB_OMS}
+      POSTGRES_USER: ${ORDER_OMS}
+      POSTGRES_PASSWORD: ${ORDER_OMS_PASSWORD}
+    volumes:
+      - order-db-data:/var/lib/postgresql/data
 
   Kafka:
     image: confluentinc/cp-kafka:latest
@@ -52,4 +69,5 @@ services:
 volumes:
   user-db-data:
   product-db-data:
+  order-db-data:
   kafka-data:
