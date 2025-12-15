@@ -28,6 +28,12 @@ func WithCatalogRoute(catalogRoute *CatalogRoutes) func(*Register) {
 	}
 }
 
+func WithConfig(config *config.Config) func(*Register) {
+	return func(r *Register) {
+		r.config = config
+	}
+}
+
 func (r *Register) RegisterRoutes() *fiber.App {
 	app := fiber.New(fiber.Config{
 		ReadTimeout:  r.config.Server.ReadTimeout,
