@@ -2,7 +2,6 @@ package postgresql
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"github.com/rs/zerolog"
 	"gorm.io/driver/postgres"
@@ -97,7 +96,7 @@ func (p *Postgresql) uri() string {
 	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=UTC", p.Host, p.User, p.Password, p.Name, p.Port, p.SSLMode)
 }
 
-func (p *Postgresql) Connect() (*gorm.DB, *sql.DB, error) {
+func (p *Postgresql) Connect() (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.Open(p.uri()), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
@@ -122,7 +121,7 @@ func (p *Postgresql) Connect() (*gorm.DB, *sql.DB, error) {
 		p.logger.Fatal().Err(err).Msg("failed to ping database")
 	}
 
-	return db, sqlDB, nil
+	return db, nil
 }
 
 func NewPostgresql(opts ...Options) *Postgresql {
