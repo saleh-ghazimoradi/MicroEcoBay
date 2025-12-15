@@ -2,28 +2,20 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
-	"log"
-	"net/http"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 )
 
 type Server struct {
-	Host         string
-	Port         string
-	Handler      http.Handler
-	IdleTimeout  time.Duration
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-	ErrorLog     *log.Logger
-	logger       *zerolog.Logger
-	WG           *sync.WaitGroup
+	Host   string
+	Port   string
+	App    *fiber.App
+	logger *zerolog.Logger
 }
 
 type Options func(*Server)
@@ -40,39 +32,9 @@ func WithPort(port string) Options {
 	}
 }
 
-func WithHandler(handler http.Handler) Options {
+func WithApp(app *fiber.App) Options {
 	return func(s *Server) {
-		s.Handler = handler
-	}
-}
-
-func WithIdleTimeout(idleTimeout time.Duration) Options {
-	return func(s *Server) {
-		s.IdleTimeout = idleTimeout
-	}
-}
-
-func WithReadTimeout(readTimeout time.Duration) Options {
-	return func(s *Server) {
-		s.ReadTimeout = readTimeout
-	}
-}
-
-func WithWriteTimeout(writeTimeout time.Duration) Options {
-	return func(s *Server) {
-		s.WriteTimeout = writeTimeout
-	}
-}
-
-func WithErrorLog(errorLog *log.Logger) Options {
-	return func(s *Server) {
-		s.ErrorLog = errorLog
-	}
-}
-
-func WithWG(wg *sync.WaitGroup) Options {
-	return func(s *Server) {
-		s.WG = wg
+		s.App = app
 	}
 }
 
@@ -84,47 +46,26 @@ func WithLogger(logger *zerolog.Logger) Options {
 
 func (s *Server) Connect() error {
 	addr := fmt.Sprintf("%s:%s", s.Host, s.Port)
-	server := &http.Server{
-		Addr:         addr,
-		Handler:      s.Handler,
-		IdleTimeout:  s.IdleTimeout,
-		ReadTimeout:  s.ReadTimeout,
-		WriteTimeout: s.WriteTimeout,
-		ErrorLog:     s.ErrorLog,
-	}
-
-	shutdownError := make(chan error)
 
 	go func() {
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-		se := <-quit
-		s.logger.Println("caught signal", "signal", se.String())
+		sig := <-quit
+
+		s.logger.Info().
+			Str("signal", sig.String()).Msg("shutting down server")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		err := server.Shutdown(ctx)
-		if err != nil {
-			shutdownError <- err
+		if err := s.App.ShutdownWithContext(ctx); err != nil {
+			s.logger.Error().Err(err).Msg("server shutdown failed")
 		}
-
-		s.logger.Println("completing background task", "addr", server.Addr)
-		s.WG.Wait()
-		shutdownError <- nil
 	}()
 
-	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return err
-	}
+	s.logger.Info().Str("addr", addr).Msg("starting fiber server")
 
-	if err := <-shutdownError; err != nil {
-		return err
-	}
-
-	s.logger.Println("stopped server", "addr", server.Addr)
-
-	return nil
+	return s.App.Listen(addr)
 }
 
 func NewServer(opts ...Options) *Server {
