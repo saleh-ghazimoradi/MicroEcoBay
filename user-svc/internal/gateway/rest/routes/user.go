@@ -6,18 +6,27 @@ import (
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/gateway/rest/middlewares"
 )
 
-func userRoutes(v1 fiber.Router, handler *handlers.UserHandler, authService middlewares.TokenService) {
-	v1.Group("/")
+type UserRoutes struct {
+	userHandler    *handlers.UserHandler
+	authMiddleware *middlewares.AuthService
+}
 
-	v1.Post("/register", handler.Register)
-	v1.Post("/login", handler.Login)
-	v1.Post("/forgot-password", handler.ForgotPassword)
-	v1.Post("/set-password", handler.SetPassword)
+func (u *UserRoutes) UserRoute(app *fiber.App) {
+	v1 := app.Group("/v1")
+	v1.Post("/register", u.userHandler.Register)
+	v1.Post("/login", u.userHandler.Login)
+	v1.Post("/forgot-password", u.userHandler.ForgotPassword)
+	v1.Post("/set-password", u.userHandler.SetPassword)
 
-	v1.Use(authService.AuthMiddleware())
+	v1.Use(u.authMiddleware.AuthMiddleware())
+	v1.Post("/profile", u.userHandler.ForgotPassword)
+	v1.Get("/profile", u.userHandler.GetProfile)
+	v1.Get("/auth", u.userHandler.Authentication)
+	v1.Get("/me", u.userHandler.Me)
+}
 
-	v1.Post("/profile", handler.CreateProfile)
-	v1.Get("/profile", handler.GetProfile)
-	v1.Get("/auth", handler.Authentication)
-	v1.Get("/me", handler.Me)
+func NewUserRoutes(userHandler *handlers.UserHandler) *UserRoutes {
+	return &UserRoutes{
+		userHandler: userHandler,
+	}
 }

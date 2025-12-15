@@ -4,20 +4,14 @@ import (
 	"errors"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/config"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/dto"
 	"strings"
 	"time"
 )
 
-type TokenService interface {
-	GenerateToken(userID uint, email string) (string, error)
-	VerifyToken(tokenString string) (*dto.AuthResponse, error)
-	AuthMiddleware() fiber.Handler
-}
-
 type AuthService struct {
-	jwtSecret string
-	jwtExp    time.Duration
+	config *config.Config
 }
 
 func (a *AuthService) AuthMiddleware() fiber.Handler {
@@ -44,10 +38,10 @@ func (a *AuthService) GenerateToken(userId uint, email string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": userId,
 		"email":   email,
-		"exp":     jwt.NewNumericDate(time.Now().Add(a.jwtExp)).Unix(),
+		"exp":     jwt.NewNumericDate(time.Now().Add(a.config.JWT.Exp)).Unix(),
 	})
 
-	tokenString, err := token.SignedString([]byte(a.jwtSecret))
+	tokenString, err := token.SignedString([]byte(a.config.JWT.Secret))
 	if err != nil {
 		return "", err
 	}
@@ -66,7 +60,7 @@ func (a *AuthService) VerifyToken(tokenString string) (*dto.AuthResponse, error)
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
-		return []byte(a.jwtSecret), nil
+		return []byte(a.config.JWT.Secret), nil
 	})
 
 	if err != nil {
@@ -89,9 +83,8 @@ func (a *AuthService) VerifyToken(tokenString string) (*dto.AuthResponse, error)
 	}, nil
 }
 
-func NewAuthService(jwtSecret string, jwtExp time.Duration) *AuthService {
+func NewAuthService(config *config.Config) *AuthService {
 	return &AuthService{
-		jwtSecret: jwtSecret,
-		jwtExp:    jwtExp,
+		config: config,
 	}
 }

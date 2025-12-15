@@ -2,34 +2,51 @@ package routes
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/config"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/infra/queue"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/gateway/rest/handlers"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/gateway/rest/middlewares"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/repository"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/internal/service"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/slg"
-	"gorm.io/gorm"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 )
 
-func RegisterRoutes(app *fiber.App, db *gorm.DB) {
-	v1 := app.Group("/v1")
+type Register struct {
+	healthRoute *HealthRoutes
+	userRoute   *UserRoutes
+}
 
-	/* ---------- Dependencies ---------- */
-	kafkaProducer := queue.NewProducer(config.AppConfig.KafkaConfig.Broker, config.AppConfig.KafkaConfig.Topic)
-	slg.Logger.Info("Kafka producer created", "kafka", kafkaProducer)
+type Options func(*Register)
 
-	/* ---------- Repositories ---------- */
-	userRepository := repository.NewUserRepository(db, db)
+func WithHealthRoute(healthRoute *HealthRoutes) Options {
+	return func(r *Register) {
+		r.healthRoute = healthRoute
+	}
+}
 
-	/* ---------- Services ---------- */
-	authService := middlewares.NewAuthService(config.AppConfig.JWT.Secret, config.AppConfig.JWT.Exp)
-	userService := service.NewUserService(userRepository, kafkaProducer)
+func WithUserRoute(userRoute *UserRoutes) Options {
+	return func(r *Register) {
+		r.userRoute = userRoute
+	}
+}
 
-	/* ---------- Handlers ---------- */
-	healthCheckHandler := handlers.NewHealthCheckHandler()
-	userHandler := handlers.NewUserHandler(userService, authService)
+func (r *Register) RegisterRoutes() *fiber.App {
+	app := fiber.New()
 
-	healthCheckRoute(v1, healthCheckHandler)
-	userRoutes(v1, userHandler, authService)
+	app.Use(logger.New())
+	app.Use(recover.New())
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "*",
+		AllowHeaders: "Content-Type, Accept, Authorization",
+		AllowMethods: "GET, POST, PUT, PATCH, DELETE",
+	}))
+
+	r.healthRoute.HealthRoute(app)
+	r.userRoute.UserRoute(app)
+
+	return app
+}
+
+func NewRegisterRoutes(opts ...Options) *Register {
+	r := &Register{}
+	for _, o := range opts {
+		o(r)
+	}
+	return r
 }
