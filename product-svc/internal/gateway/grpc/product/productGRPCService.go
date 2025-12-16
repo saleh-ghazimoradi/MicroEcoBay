@@ -3,7 +3,6 @@ package product
 import (
 	"context"
 	"github.com/saleh-ghazimoradi/MicroEcoBay/product_service/internal/service"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/product_service/slg"
 	"strconv"
 )
 
@@ -19,7 +18,6 @@ func (p *productGRPCService) GetProductById(ctx context.Context, req *GetProduct
 		return nil, err
 	}
 
-	slg.Logger.Info("GetProductById", "grpc request", req)
 	return &ProductResponse{
 		Id:         int32(product.ID),
 		Name:       product.Name,

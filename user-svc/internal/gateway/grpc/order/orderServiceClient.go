@@ -2,7 +2,6 @@ package order
 
 import (
 	"context"
-	"github.com/saleh-ghazimoradi/MicroEcoBay/user_service/slg"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -16,7 +15,6 @@ func (g *GrpcOrderServiceClient) GetUserOrders(ctx context.Context, userId int64
 		UserId: userId,
 	})
 	if err != nil {
-		slg.Logger.Error("Failed to get orders for user", "userId", userId, "error", err)
 		return nil, err
 	}
 	return res, nil
