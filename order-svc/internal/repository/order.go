@@ -10,15 +10,17 @@ type OrderRepository interface {
 	CreateOrder(ctx context.Context, order *domain.Order) error
 	GetOrderByUser(ctx context.Context, userId uint) ([]*domain.Order, error)
 	GetOrderById(ctx context.Context, orderId, userId uint) (*domain.Order, error)
+	WithTx(tx *gorm.DB) OrderRepository
 }
 
 type orderRepository struct {
 	dbWrite *gorm.DB
 	dbRead  *gorm.DB
+	tx      *gorm.DB
 }
 
 func (o *orderRepository) CreateOrder(ctx context.Context, order *domain.Order) error {
-	return o.dbWrite.Transaction(func(tx *gorm.DB) error {
+	return exec(o.dbWrite, o.tx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(order).Error; err != nil {
 			return err
 		}
@@ -28,7 +30,7 @@ func (o *orderRepository) CreateOrder(ctx context.Context, order *domain.Order) 
 
 func (o *orderRepository) GetOrderByUser(ctx context.Context, userId uint) ([]*domain.Order, error) {
 	var orders []*domain.Order
-	if err := o.dbRead.Preload("OrderItems").Where("user_id = ?", userId).Find(&orders).Error; err != nil {
+	if err := exec(o.dbRead, o.tx).Preload("OrderItems").Where("user_id = ?", userId).Find(&orders).Error; err != nil {
 		return nil, err
 	}
 	return orders, nil
@@ -36,10 +38,18 @@ func (o *orderRepository) GetOrderByUser(ctx context.Context, userId uint) ([]*d
 
 func (o *orderRepository) GetOrderById(ctx context.Context, orderId, userId uint) (*domain.Order, error) {
 	var order *domain.Order
-	if err := o.dbRead.Preload("OrderItems").Where("order_id = ? AND user_id = ?", orderId, userId).First(&order).Error; err != nil {
+	if err := exec(o.dbRead, o.tx).Preload("OrderItems").Where("order_id = ? AND user_id = ?", orderId, userId).First(&order).Error; err != nil {
 		return nil, err
 	}
 	return order, nil
+}
+
+func (o *orderRepository) WithTx(tx *gorm.DB) OrderRepository {
+	return &orderRepository{
+		dbWrite: o.dbWrite,
+		dbRead:  o.dbRead,
+		tx:      tx,
+	}
 }
 
 func NewOrderRepository(dbWrite, dbRead *gorm.DB) OrderRepository {
